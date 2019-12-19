@@ -2,10 +2,12 @@ version: '3.6'
 services:
   redis:
     image: redis
+    container_name: cache
     expose:
     - 6379
   app:
     build: ./
     ports:
      - "80:80"
-  
+    depends_on:
+    - redis

@@ -3,13 +3,13 @@
 package main
 
 import (
-	//	"bytes"
 	"encoding/json"
+	"github.com/gomodule/redigo/redis"
 	"github.com/x1um1n/checkerr"
 	"io/ioutil"
 	"log"
 	"net/http"
-	// "strconv"
+	"time"
 )
 
 // Constructor holds the info about constructors
@@ -86,7 +86,45 @@ func getConstructorsTitles(con string) (titles []string) {
 	return nil
 }
 
+// newPool creates a redis connection pool
+func newPool() *redis.Pool {
+	return &redis.Pool{
+		MaxIdle:   80,
+		MaxActive: 12000,
+		Dial: func() (redis.Conn, error) {
+			c, err := redis.Dial("tcp", "cache:6379")
+			checkerr.Check(err, "Error connecting to redis")
+			return c, err
+		},
+	}
+}
+
+// ping tests connectivity for redis (PONG should be returned)
+func ping(c redis.Conn) error {
+	s, err := redis.String(c.Do("PING"))
+	if err != nil {
+		return err
+	}
+
+	log.Printf("PING Response = %s\n", s)
+	return nil
+}
+
 func main() {
+	//create redis connection pool
+	pool := newPool()
+	conn := pool.Get()
+	defer conn.Close()
+
+	for i := 0; i < 10; i++ {
+		err := ping(conn)
+		if !checkerr.Check(err, "Error pinging redis..") {
+			break
+		}
+		log.Printf("Attempt %d of 10, retrying in 5s\n", i)
+		time.Sleep(5 * time.Second)
+	}
+
 	var teams []Constructor
 	teams = getChampConstructors()
 
