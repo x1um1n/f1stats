@@ -29,7 +29,7 @@ func main() {
 
 	go startHealth() //start the healthcheck endpoints
 
-	ergast.Repopulate(pool)
+	ergast.Repopulate(pool) //get a fresh dataset & load it into redis
 
-	//fixme: listen and serve
+	log.Fatal(http.ListenAndServe(":80", nil))
 }

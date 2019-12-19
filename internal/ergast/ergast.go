@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/x1um1n/checkerr"
 	// "github.com/x1um1n/f1stats/internal/shared"
@@ -13,24 +14,13 @@ import (
 
 // Constructor holds the info about constructors
 type Constructor struct {
-	ConstructorID      string `json:"constructorId"`
-	URL                string `json:"url"`
-	Name               string `json:"name"`
-	Nationality        string `json:"nationality"`
-	DriversTitles      []string
-	ConstructorsTitles []string
-}
-
-// ConsRes result set for constructor api query
-type ConsRes struct {
-	ConsReslt struct {
-		Limit   string `json:"limit"`
-		Offset  string `json:"offset"`
-		Total   string `json:"total"`
-		ConsTab struct {
-			Constructors []Constructor `json:"Constructors"`
-		} `json:"ConstructorTable"`
-	} `json:"MRData"`
+	ConstructorID      string   `json:"constructorId"`
+	URL                string   `json:"url"`
+	Name               string   `json:"name"`
+	Nationality        string   `json:"nationality"`
+	ConstructorsTitles []string `json:"constructors-titles"`
+	RaceStarts         int      `json:"race-starts"`
+	RaceWins           int      `json:"race-wins"`
 }
 
 // StandList contains the years a Constructor has won the title
@@ -38,28 +28,25 @@ type StandList struct {
 	Year string `json:"season"`
 }
 
-// ConsWinsRes result set for Constructor titles api query
-type ConsWinsRes struct {
-	ConsReslt struct {
-		Limit     string `json:"limit"`
-		Offset    string `json:"offset"`
-		Total     string `json:"total"`
-		StandsTab struct {
-			Years []StandList `json:"StandingsLists"`
-		} `json:"StandingsTable"`
-	} `json:"MRData"`
-}
-
 // GetChampConstructors gets all the Constructors who have won the constructors
 // championship, the default limit is 30 and current count of unique Constructors
 // is 17, so there should be no need to either get a second page or increase the
 // results limit for the foreseeable future
 func GetChampConstructors() []Constructor {
-	log.Println("Getting all championship-winning constructors from ergast api")
+	log.Println("Getting all championship-winning constructors")
 	response, err := http.Get("https://ergast.com/api/f1/constructorStandings/1/constructors.json")
 	if !checkerr.Check(err, "Failed to get all championship-winning constructors") {
 		data, _ := ioutil.ReadAll(response.Body)
-		var res ConsRes
+		var res struct {
+			ConsReslt struct {
+				Limit   string `json:"limit"`
+				Offset  string `json:"offset"`
+				Total   string `json:"total"`
+				ConsTab struct {
+					Constructors []Constructor `json:"Constructors"`
+				} `json:"ConstructorTable"`
+			} `json:"MRData"`
+		}
 		json.Unmarshal(data, &res)
 		return res.ConsReslt.ConsTab.Constructors
 	}
@@ -70,11 +57,20 @@ func GetChampConstructors() []Constructor {
 // championship.  as with getChampConstructors, there is no constructor which
 // has won the title anywhere near 30 times
 func GetConstructorsTitles(con string) (titles []string) {
-	log.Printf("Getting all constructors titles for %s from ergast api\n", con)
+	log.Printf("Getting all constructors titles for %s\n", con)
 	response, err := http.Get("https://ergast.com/api/f1/constructors/" + con + "/constructorStandings/1.json")
 	if !checkerr.Check(err, "Failed to get all constructors titles for ", con) {
 		data, _ := ioutil.ReadAll(response.Body)
-		var res ConsWinsRes
+		var res struct {
+			ConsReslt struct {
+				Limit     string `json:"limit"`
+				Offset    string `json:"offset"`
+				Total     string `json:"total"`
+				StandsTab struct {
+					Years []StandList `json:"StandingsLists"`
+				} `json:"StandingsTable"`
+			} `json:"MRData"`
+		}
 		json.Unmarshal(data, &res)
 
 		for _, t := range res.ConsReslt.StandsTab.Years {
@@ -85,24 +81,72 @@ func GetConstructorsTitles(con string) (titles []string) {
 	return nil
 }
 
+// GetRaceStarts gets the total number of race starts for a constructor
+func GetRaceStarts(con string) int {
+	log.Printf("Getting all race starts for %s\n", con)
+	response, err := http.Get("https://ergast.com/api/f1/constructors/" + con + "/results.json?limit=0")
+	if !checkerr.Check(err, "Failed to get all race starts for ", con) {
+		data, _ := ioutil.ReadAll(response.Body)
+		var res struct {
+			MRData struct {
+				Starts string `json:"total"`
+			} `json:"MRData"`
+		}
+		json.Unmarshal(data, &res)
+
+		s, e := strconv.Atoi(res.MRData.Starts)
+		if !checkerr.Check(e, "Failed to convert string to int", res.MRData.Starts) {
+			return s
+		}
+	}
+	return 0
+}
+
+// GetRaceWins gets the total number of race wins for a contructor
+func GetRaceWins(con string) int {
+	log.Printf("Getting all race wins for %s\n", con)
+	response, err := http.Get("https://ergast.com/api/f1/constructors/" + con + "/results/1.json?limit=0")
+	if !checkerr.Check(err, "Failed to get all race wins for ", con) {
+		data, _ := ioutil.ReadAll(response.Body)
+		var res struct {
+			MRData struct {
+				Wins string `json:"total"`
+			} `json:"MRData"`
+		}
+		json.Unmarshal(data, &res)
+
+		s, e := strconv.Atoi(res.MRData.Wins)
+		if !checkerr.Check(e, "Failed to convert string to int", res.MRData.Wins) {
+			return s
+		}
+	}
+	return 0
+}
+
 // Repopulate empties the redis cache and get fresh stats from ergast
-func Repopulate(p *redis.Pool) {
+func Repopulate(p *redis.Pool) error {
 	c := p.Get()
 	defer c.Close()
+
 	log.Println("Getting the latest f1 stats from ergast api")
 	_, err := c.Do("FLUSHALL")
 	if !checkerr.Check(err, "Error flushing redis, abandoning attempt to repopulate the data") {
-		//fixme: dump all this in redis, not out to terminal
 		var teams []Constructor
 		teams = GetChampConstructors()
 
 		for i, t := range teams {
 			teams[i].ConstructorsTitles = GetConstructorsTitles(t.ConstructorID)
-			log.Printf("%s won the constructors title %d times: ", t.Name, len(teams[i].ConstructorsTitles))
-			for _, tt := range teams[i].ConstructorsTitles {
-				log.Printf("%s ", tt)
+			teams[i].RaceStarts = GetRaceStarts(t.ConstructorID)
+			teams[i].RaceWins = GetRaceWins(t.ConstructorID)
+
+			json, e := json.Marshal(teams[i])
+			if !checkerr.Check(e, "Error marshalling json") {
+				_, err = c.Do("SET", t.ConstructorID, json)
+				if checkerr.Check(err, "Error writing to redis:", string(json)) {
+					return err
+				}
 			}
-			log.Printf("\n")
 		}
 	}
+	return nil
 }
