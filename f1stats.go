@@ -9,7 +9,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"strconv"
+	// "strconv"
 )
 
 // Constructor holds the info about constructors
@@ -46,7 +46,7 @@ type ConsWinsRes struct {
 		Offset    string `json:"offset"`
 		Total     string `json:"total"`
 		StandsTab struct {
-			Years []StandList `json:"StandingsList"`
+			Years []StandList `json:"StandingsLists"`
 		} `json:"StandingsTable"`
 	} `json:"MRData"`
 }
@@ -67,25 +67,19 @@ func getChampConstructors() []Constructor {
 	return nil
 }
 
+// getConstructorsTitles gets all the years a constructor won the contructors
+// championship.  as with getChampConstructors, there is no constructor which
+// has won the title anywhere near 30 times
 func getConstructorsTitles(con string) (titles []string) {
 	log.Printf("Getting all constructors titles for %s from ergast api\n", con)
 	response, err := http.Get("https://ergast.com/api/f1/constructors/" + con + "/constructorStandings/1.json")
-	if !checkerr.Check(err, "Failed to get all championship-winning constructors") {
+	if !checkerr.Check(err, "Failed to get all constructors titles for ", con) {
 		data, _ := ioutil.ReadAll(response.Body)
 		var res ConsWinsRes
 		json.Unmarshal(data, &res)
 
-		total, err := strconv.Atoi(res.ConsReslt.Total)
-		checkerr.Check(err, "Error converting total to an int")
-		limit, err2 := strconv.Atoi(res.ConsReslt.Limit)
-		checkerr.Check(err2, "Error converting limit to an int")
-
-		if total > limit {
-			//fixme: big result set
-		} else {
-			for _, t := range res.ConsReslt.StandsTab.Years {
-				titles = append(titles, t.Year)
-			}
+		for _, t := range res.ConsReslt.StandsTab.Years {
+			titles = append(titles, t.Year)
 		}
 		return
 	}
@@ -96,7 +90,12 @@ func main() {
 	var teams []Constructor
 	teams = getChampConstructors()
 
-	for _, t := range teams {
-		log.Println(t.Name)
+	for i, t := range teams {
+		teams[i].ConstructorsTitles = getConstructorsTitles(t.ConstructorID)
+		log.Printf("%s won the constructors title %d times: ", t.Name, len(teams[i].ConstructorsTitles))
+		for _, tt := range teams[i].ConstructorsTitles {
+			log.Printf("%s ", tt)
+		}
+		log.Printf("\n")
 	}
 }
