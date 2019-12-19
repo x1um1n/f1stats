@@ -9,8 +9,8 @@ import (
 	"strconv"
 
 	"github.com/x1um1n/checkerr"
-	// "github.com/x1um1n/f1stats/internal/shared"
-	"github.com/gomodule/redigo/redis"
+	"github.com/x1um1n/f1stats/internal/shared"
+	// "github.com/gomodule/redigo/redis"
 )
 
 // Constructor holds the info about constructors
@@ -129,8 +129,8 @@ func GetRaceWins(con string) int {
 }
 
 // Repopulate empties the redis cache and get fresh stats from ergast
-func Repopulate(p *redis.Pool) error {
-	c := p.Get()
+func Repopulate() error {
+	c := shared.P.Get()
 	defer c.Close()
 
 	log.Println("Getting the latest f1 stats from ergast api")

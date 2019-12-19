@@ -39,6 +39,8 @@ func LoadKoanf() {
 
 /******************** DB handling stuff ***************************************/
 
+var P *redis.Pool
+
 // newPool creates a redis connection pool
 func newPool() *redis.Pool {
 	return &redis.Pool{
@@ -64,21 +66,20 @@ func ping(c redis.Conn) error {
 }
 
 // InitRedis initialises the redis connection pool
-func InitRedis() *redis.Pool {
+func InitRedis() {
 	//create redis connection pool
-	pool := newPool()
-	conn := pool.Get()
-	defer conn.Close()
+	P = newPool()
+	c := P.Get()
+	defer c.Close()
 
 	for i := 0; i < 10; i++ {
-		err := ping(conn)
+		err := ping(c)
 		if !checkerr.Check(err, "Error pinging redis..") {
-			return pool
+			continue
 		}
 		log.Printf("Attempt %d of 10, retrying in 5s\n", i)
 		time.Sleep(5 * time.Second)
 	}
-	return nil
 }
 
 /******************** End DB handling stuff ***********************************/

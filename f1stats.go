@@ -16,8 +16,6 @@ import (
 	"time"
 )
 
-var pool *redis.Pool
-
 //PageVariables struct defining variables visible to the html pages
 type PageVariables struct {
 	PageTitle    string
@@ -40,8 +38,10 @@ func indexPage(w http.ResponseWriter, r *http.Request) {
 
 	pv := PageVariables{
 		PageTitle:    Title,
-		Constructors: getConstructors(pool),
 	}
+
+	pv.Constructors = getConstructors()
+	log.Println(pv)
 
 	t, err := template.ParseFiles("web/template/index.html")
 	checkerr.Check(err, "Index template parsing error")
@@ -50,18 +50,20 @@ func indexPage(w http.ResponseWriter, r *http.Request) {
 	checkerr.Check(err, "Index template executing error")
 }
 
-func getConstructors(p *redis.Pool) (res []ergast.Constructor) {
-	c := p.Get()
+func getConstructors() (result []ergast.Constructor) {
+	c := shared.P.Get()
 	defer c.Close()
 
 	log.Println("Getting constructors stats from redis")
 	teams, err := redis.Strings(c.Do("KEYS", "*"))
 	if !checkerr.Check(err, "Error getting keys from redis") {
 		for _, t := range teams {
+			res := ergast.Constructor{}
 			s, err2 := redis.String(c.Do("GET", t))
 			if !checkerr.Check(err2, "Error getting team info for", t) {
 				json.Unmarshal([]byte(s), &res)
 			}
+			result = append(result, res)
 		}
 	}
 	return
@@ -69,9 +71,9 @@ func getConstructors(p *redis.Pool) (res []ergast.Constructor) {
 
 func main() {
 	shared.LoadKoanf()         //read in the config
-	pool := shared.InitRedis() //create a redis connection pool
+	shared.InitRedis() 				//create a redis connection pool
 
-	ergast.Repopulate(pool) //get a fresh dataset & load it into redis
+	ergast.Repopulate() //get a fresh dataset & load it into redis
 	go startHealth()        //start the healthcheck endpoints
 
 	http.HandleFunc("/", indexPage) //handler for the root page
