@@ -3,15 +3,26 @@
 package main
 
 import (
-	// "github.com/x1um1n/checkerr"
+	"github.com/gomodule/redigo/redis"
 	"github.com/heptiolabs/healthcheck"
+	"github.com/x1um1n/checkerr"
 	"github.com/x1um1n/f1stats/internal/ergast"
 	"github.com/x1um1n/f1stats/internal/shared"
 
+	"encoding/json"
+	"html/template"
 	"log"
 	"net/http"
 	"time"
 )
+
+var pool *redis.Pool
+
+//PageVariables struct defining variables visible to the html pages
+type PageVariables struct {
+	PageTitle    string
+	Constructors []ergast.Constructor
+}
 
 // defines and starts the healthcheck
 func startHealth() {
@@ -23,13 +34,47 @@ func startHealth() {
 	go http.ListenAndServe("0.0.0.0:9080", h)
 }
 
+// Start index page handler which renders the all time constructors standings
+func indexPage(w http.ResponseWriter, r *http.Request) {
+	Title := "All Time F1 Constructors Standings"
+
+	pv := PageVariables{
+		PageTitle:    Title,
+		Constructors: getConstructors(pool),
+	}
+
+	t, err := template.ParseFiles("web/template/index.html")
+	checkerr.Check(err, "Index template parsing error")
+
+	err = t.Execute(w, pv)
+	checkerr.Check(err, "Index template executing error")
+}
+
+func getConstructors(p *redis.Pool) (res []ergast.Constructor) {
+	c := p.Get()
+	defer c.Close()
+
+	log.Println("Getting constructors stats from redis")
+	teams, err := redis.Strings(c.Do("KEYS", "*"))
+	if !checkerr.Check(err, "Error getting keys from redis") {
+		for _, t := range teams {
+			s, err2 := redis.String(c.Do("GET", t))
+			if !checkerr.Check(err2, "Error getting team info for", t) {
+				json.Unmarshal([]byte(s), &res)
+			}
+		}
+	}
+	return
+}
+
 func main() {
 	shared.LoadKoanf()         //read in the config
 	pool := shared.InitRedis() //create a redis connection pool
 
-	go startHealth() //start the healthcheck endpoints
-
 	ergast.Repopulate(pool) //get a fresh dataset & load it into redis
+	go startHealth()        //start the healthcheck endpoints
+
+	http.HandleFunc("/", indexPage) //handler for the root page
 
 	log.Fatal(http.ListenAndServe(":80", nil))
 }

@@ -2,6 +2,7 @@ package ergast
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -19,8 +20,12 @@ type Constructor struct {
 	Name               string   `json:"name"`
 	Nationality        string   `json:"nationality"`
 	ConstructorsTitles []string `json:"constructors-titles"`
+	YearsActive        []string `json:"years-active"`       //fixme
+	YearsActiveH       string   `json:"years-active-human"` //fixme
 	RaceStarts         int      `json:"race-starts"`
 	RaceWins           int      `json:"race-wins"`
+	WinRate            float32  `json:"win-rate"`       //fixme
+	WinRateH           string   `json:"win-rate-human"` //fixme
 }
 
 // StandList contains the years a Constructor has won the title
@@ -138,6 +143,8 @@ func Repopulate(p *redis.Pool) error {
 			teams[i].ConstructorsTitles = GetConstructorsTitles(t.ConstructorID)
 			teams[i].RaceStarts = GetRaceStarts(t.ConstructorID)
 			teams[i].RaceWins = GetRaceWins(t.ConstructorID)
+			teams[i].WinRate = float32(teams[i].RaceWins) / float32(teams[i].RaceStarts)
+			teams[i].WinRateH = fmt.Sprintf("%f %% (%d wins from %d starts)", teams[i].WinRate, teams[i].RaceWins, teams[i].RaceStarts)
 
 			json, e := json.Marshal(teams[i])
 			if !checkerr.Check(e, "Error marshalling json") {

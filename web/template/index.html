@@ -1,0 +1,56 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    </head>
+    <body>
+      {{with $1:=.Constructors}}
+      <table id="constructors">
+        <tr>
+          <th>Constructor Name</th>
+          <th>Nationality</th>
+          <th>Years Active</th>
+          <th>Constructors Titles</th>
+          <th>Win Rate</th>
+        </tr>
+        {{range .Constructors}}
+        <tr>
+          <td>{{.Name}}</td>
+          <td>{{.Nationality}}</td>
+          <td>FIXME :(</td>
+          <td>{{.ConstructorsTitles}}</td>
+          <td>{{.WinRateH}}</td>
+        </tr>
+        {{end}}
+      </table>
+
+      <script>
+        function sortTable() {
+          var table, rows, switching, i, x, y, shouldSwitch;
+          table = document.getElementById("constructors");
+          switching = true;
+          while (switching) {
+            //start by saying: no switching is done:
+            switching = false;
+            rows = table.rows;
+            for (i = 1; i < (rows.length - 1); i++) {
+              //start by saying there should be no switching:
+              shouldSwitch = false;
+              x = rows[i].getElementsByTagName("TD")[0];
+              y = rows[i + 1].getElementsByTagName("TD")[0];
+              //check if the two rows should switch place:
+              if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
+                //if so, mark as a switch and break the loop:
+                shouldSwitch = true;
+                break;
+              }
+            }
+            if (shouldSwitch) {
+              rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+              switching = true;
+            }
+          }
+        }
+        </script>
+    </body>
+</html>
