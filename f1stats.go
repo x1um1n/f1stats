@@ -4,13 +4,30 @@ package main
 
 import (
 	// "github.com/x1um1n/checkerr"
+	"github.com/heptiolabs/healthcheck"
 	"github.com/x1um1n/f1stats/internal/ergast"
 	"github.com/x1um1n/f1stats/internal/shared"
+
 	"log"
+	"net/http"
+	"time"
 )
 
+// defines and starts the healthcheck
+func startHealth() {
+	h := healthcheck.NewHandler()
+
+	log.Println("Adding redis cache check")
+	h.AddReadinessCheck("redis", healthcheck.Async(healthcheck.TCPDialCheck(shared.K.String("redis_host")+":6379", 50*time.Millisecond), 10*time.Second))
+
+	go http.ListenAndServe("0.0.0.0:9080", h)
+}
+
 func main() {
-	conn := shared.InitRedis()
+	shared.LoadKoanf() //read in the config
+	// conn := shared.InitRedis() //create a redis connection pool
+
+	go startHealth() //start the healthcheck endpoints
 
 	var teams []ergast.Constructor
 	teams = ergast.GetChampConstructors()

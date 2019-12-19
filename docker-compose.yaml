@@ -8,6 +8,10 @@ services:
   app:
     build: ./
     ports:
-     - "80:80"
+    - "80:80"
+    - "9080:9080"
     depends_on:
     - redis
+    environment:
+      KOANF_ENVIRONMENT: docker
+      KOANF_REDIS_HOST: cache

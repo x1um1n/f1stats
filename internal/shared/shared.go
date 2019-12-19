@@ -24,7 +24,7 @@ var K = koanf.New(".")
 // overrides/appends to those values with environment variables prefixed with KOANF_
 func LoadKoanf() {
 	log.Println("Reading default config")
-	err := K.Load(file.Provider("configs/default.yml"), yaml.Parser())
+	err := K.Load(file.Provider("config/default.yaml"), yaml.Parser())
 	checkerr.CheckFatal(err, "Error reading default config file")
 
 	log.Println("Checking environment for overrides")
@@ -45,7 +45,7 @@ func newPool() *redis.Pool {
 		MaxIdle:   80,
 		MaxActive: 12000,
 		Dial: func() (redis.Conn, error) {
-			c, err := redis.Dial("tcp", "cache:6379")
+			c, err := redis.Dial("tcp", K.String("redis_host")+":6379")
 			checkerr.Check(err, "Error connecting to redis")
 			return c, err
 		},
