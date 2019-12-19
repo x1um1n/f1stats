@@ -144,7 +144,7 @@ func Repopulate(p *redis.Pool) error {
 			teams[i].RaceStarts = GetRaceStarts(t.ConstructorID)
 			teams[i].RaceWins = GetRaceWins(t.ConstructorID)
 			teams[i].WinRate = float32(teams[i].RaceWins) / float32(teams[i].RaceStarts)
-			teams[i].WinRateH = fmt.Sprintf("%f %% (%d wins from %d starts)", teams[i].WinRate, teams[i].RaceWins, teams[i].RaceStarts)
+			teams[i].WinRateH = fmt.Sprintf("%.2f%% (%d wins from %d starts)", (teams[i].WinRate * 100), teams[i].RaceWins, teams[i].RaceStarts)
 
 			json, e := json.Marshal(teams[i])
 			if !checkerr.Check(e, "Error marshalling json") {
