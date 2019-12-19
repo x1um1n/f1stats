@@ -8,6 +8,7 @@ import (
 
 	"github.com/x1um1n/checkerr"
 	// "github.com/x1um1n/f1stats/internal/shared"
+	"github.com/gomodule/redigo/redis"
 )
 
 // Constructor holds the info about constructors
@@ -82,4 +83,26 @@ func GetConstructorsTitles(con string) (titles []string) {
 		return
 	}
 	return nil
+}
+
+// Repopulate empties the redis cache and get fresh stats from ergast
+func Repopulate(p *redis.Pool) {
+	c := p.Get()
+	defer c.Close()
+	log.Println("Getting the latest f1 stats from ergast api")
+	_, err := c.Do("FLUSHALL")
+	if !checkerr.Check(err, "Error flushing redis, abandoning attempt to repopulate the data") {
+		//fixme: dump all this in redis, not out to terminal
+		var teams []Constructor
+		teams = GetChampConstructors()
+
+		for i, t := range teams {
+			teams[i].ConstructorsTitles = GetConstructorsTitles(t.ConstructorID)
+			log.Printf("%s won the constructors title %d times: ", t.Name, len(teams[i].ConstructorsTitles))
+			for _, tt := range teams[i].ConstructorsTitles {
+				log.Printf("%s ", tt)
+			}
+			log.Printf("\n")
+		}
+	}
 }

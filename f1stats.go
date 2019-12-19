@@ -24,20 +24,12 @@ func startHealth() {
 }
 
 func main() {
-	shared.LoadKoanf() //read in the config
-	// conn := shared.InitRedis() //create a redis connection pool
+	shared.LoadKoanf()         //read in the config
+	pool := shared.InitRedis() //create a redis connection pool
 
 	go startHealth() //start the healthcheck endpoints
 
-	var teams []ergast.Constructor
-	teams = ergast.GetChampConstructors()
+	ergast.Repopulate(pool)
 
-	for i, t := range teams {
-		teams[i].ConstructorsTitles = ergast.GetConstructorsTitles(t.ConstructorID)
-		log.Printf("%s won the constructors title %d times: ", t.Name, len(teams[i].ConstructorsTitles))
-		for _, tt := range teams[i].ConstructorsTitles {
-			log.Printf("%s ", tt)
-		}
-		log.Printf("\n")
-	}
+	//fixme: listen and serve
 }

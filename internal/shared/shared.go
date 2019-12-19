@@ -64,7 +64,7 @@ func ping(c redis.Conn) error {
 }
 
 // InitRedis initialises the redis connection pool
-func InitRedis() *redis.Conn {
+func InitRedis() *redis.Pool {
 	//create redis connection pool
 	pool := newPool()
 	conn := pool.Get()
@@ -73,7 +73,7 @@ func InitRedis() *redis.Conn {
 	for i := 0; i < 10; i++ {
 		err := ping(conn)
 		if !checkerr.Check(err, "Error pinging redis..") {
-			return &conn
+			return pool
 		}
 		log.Printf("Attempt %d of 10, retrying in 5s\n", i)
 		time.Sleep(5 * time.Second)
