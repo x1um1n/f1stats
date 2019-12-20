@@ -1,6 +1,33 @@
-.table, .th, .td {
-    border: 1px solid black;
+body {
+  font-family: 'Open Sans', sans-serif;
 }
-.th {
+
+.header {
+    width: inherit;
+    overflow: hidden;
+    background: #313c53;
+    font-size: 3em;
+    font-family: inherit;
+    color: white;
+    text-align: center;
+    padding: 30px;
+    overflow: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.main {
+    font-family: inherit;
+    background: #f7f7f5;
+    padding: 30px;
+    overflow: inherit;
+}
+
+th {
     cursor: pointer;
+}
+
+.data-table {
+    width: 100%;
 }

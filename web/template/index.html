@@ -5,31 +5,36 @@
         <link rel="stylesheet" href="/web/static/style.css">
     </head>
     <body>
-      <table id="constructors">
-        <tr>
-          <th>Constructor Name</th>
-          <th>Nationality</th>
-          <th>Years Active</th>
-          <th>Constructors Titles</th>
-          <th>Win Rate</th>
-        </tr>
-        {{range .Constructors}}
-        <tr>
-          <td><a href="{{.URL}}">{{.Name}}</a></td>
-          <td>{{.Nationality}}</td>
-          <td>FIXME :(</td>
-          <td>
-              {{.ConTitleCount}}:
-              {{range .ConstructorsTitles}}
-                {{.}},
-              {{end}}
-          </td>
-          <td>{{.WinRateH}}</td>
-        </tr>
-        {{end}}
-      </table>
-
+      <div class="header">
+        {{.PageTitle}}
+      </div>
+      <div class="main">
+        <table id="constructors" class="data-table" border="1" frame="void" rules="all" cellspacing="0" cellpadding="5">
+          <tr>
+            <th>Constructor Name</th>
+            <th>Nationality</th>
+            <th>Years Active</th>
+            <th>Constructors Titles</th>
+            <th>Win Rate</th>
+          </tr>
+          {{range .Constructors}}
+          <tr>
+            <td><a href="{{.URL}}">{{.Name}}</a></td>
+            <td>{{.Nationality}}</td>
+            <td>FIXME :(</td>
+            <td>
+                {{.ConTitleCount}}:
+                {{range .ConstructorsTitles}}
+                  {{.}},
+                {{end}}
+            </td>
+            <td>{{.WinRateH}}</td>
+          </tr>
+          {{end}}
+        </table>
+      </div>
       <script>
+        //stolen from https://stackoverflow.com/questions/14267781/sorting-html-table-with-javascript
         const getCellValue = (tr, idx) => tr.children[idx].innerText || tr.children[idx].textContent;
 
         const comparer = (idx, asc) => (a, b) => ((v1, v2) =>
