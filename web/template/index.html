@@ -2,6 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <link rel="stylesheet" href="/web/static/style.css">
     </head>
     <body>
       <table id="constructors">
@@ -14,42 +15,34 @@
         </tr>
         {{range .Constructors}}
         <tr>
-          <td>{{.Name}}</td>
+          <td><a href="{{.URL}}">{{.Name}}</a></td>
           <td>{{.Nationality}}</td>
           <td>FIXME :(</td>
-          <td>{{.ConstructorsTitles}}</td>
+          <td>
+              {{.ConTitleCount}}:
+              {{range .ConstructorsTitles}}
+                {{.}},
+              {{end}}
+          </td>
           <td>{{.WinRateH}}</td>
         </tr>
         {{end}}
       </table>
 
       <script>
-        function sortTable() {
-          var table, rows, switching, i, x, y, shouldSwitch;
-          table = document.getElementById("constructors");
-          switching = true;
-          while (switching) {
-            //start by saying: no switching is done:
-            switching = false;
-            rows = table.rows;
-            for (i = 1; i < (rows.length - 1); i++) {
-              //start by saying there should be no switching:
-              shouldSwitch = false;
-              x = rows[i].getElementsByTagName("TD")[0];
-              y = rows[i + 1].getElementsByTagName("TD")[0];
-              //check if the two rows should switch place:
-              if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
-                //if so, mark as a switch and break the loop:
-                shouldSwitch = true;
-                break;
-              }
-            }
-            if (shouldSwitch) {
-              rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
-              switching = true;
-            }
-          }
-        }
-        </script>
+        const getCellValue = (tr, idx) => tr.children[idx].innerText || tr.children[idx].textContent;
+
+        const comparer = (idx, asc) => (a, b) => ((v1, v2) =>
+          v1 !== '' && v2 !== '' && !isNaN(v1) && !isNaN(v2) ? v1 - v2 : v1.toString().localeCompare(v2)
+          )(getCellValue(asc ? a : b, idx), getCellValue(asc ? b : a, idx));
+
+        // do the work...
+        document.querySelectorAll('th').forEach(th => th.addEventListener('click', (() => {
+          const table = th.closest('table');
+          Array.from(table.querySelectorAll('tr:nth-child(n+2)'))
+              .sort(comparer(Array.from(th.parentNode.children).indexOf(th), this.asc = !this.asc))
+              .forEach(tr => table.appendChild(tr) );
+        })));
+      </script>
     </body>
 </html>

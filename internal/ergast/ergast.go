@@ -19,6 +19,7 @@ type Constructor struct {
 	URL                string   `json:"url"`
 	Name               string   `json:"name"`
 	Nationality        string   `json:"nationality"`
+	ConTitleCount			 int			`json:"constructors-titles-count"`
 	ConstructorsTitles []string `json:"constructors-titles"`
 	YearsActive        []string `json:"years-active"`       //fixme
 	YearsActiveH       string   `json:"years-active-human"` //fixme
@@ -141,6 +142,7 @@ func Repopulate() error {
 
 		for i, t := range teams {
 			teams[i].ConstructorsTitles = GetConstructorsTitles(t.ConstructorID)
+			teams[i].ConTitleCount = len(teams[i].ConstructorsTitles)
 			teams[i].RaceStarts = GetRaceStarts(t.ConstructorID)
 			teams[i].RaceWins = GetRaceWins(t.ConstructorID)
 			teams[i].WinRate = float32(teams[i].RaceWins) / float32(teams[i].RaceStarts)

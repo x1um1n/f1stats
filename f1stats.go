@@ -41,7 +41,6 @@ func indexPage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pv.Constructors = getConstructors()
-	log.Println(pv)
 
 	t, err := template.ParseFiles("web/template/index.html")
 	checkerr.Check(err, "Index template parsing error")
@@ -77,6 +76,8 @@ func main() {
 	go startHealth()        //start the healthcheck endpoints
 
 	http.HandleFunc("/", indexPage) //handler for the root page
+	http.Handle("/web/static/", http.StripPrefix("/web/static/", http.FileServer(http.Dir("web/static")))) //expose images & css
+
 
 	log.Fatal(http.ListenAndServe(":80", nil))
 }
