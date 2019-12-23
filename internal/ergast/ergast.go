@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/gomodule/redigo/redis"
 	"github.com/x1um1n/checkerr"
 	"github.com/x1um1n/f1stats/internal/shared"
-	// "github.com/gomodule/redigo/redis"
 )
 
 // Constructor holds the info about constructors
@@ -184,6 +184,42 @@ func getYearSpans(years []string) string {
 		s += ", " + spans[spndx].start + "-" + spans[spndx].end
 	}
 	return s
+}
+
+// RefreshRaceStats updates the race starts, wins etc, but not the expensive stuff
+func RefreshRaceStats() error {
+	c := shared.P.Get()
+	defer c.Close()
+	var teams []Constructor
+
+	log.Println("Getting constructors stats from redis")
+	ts, err := redis.Strings(c.Do("KEYS", "*"))
+	if !checkerr.Check(err, "Error getting keys from redis") {
+		for _, t := range ts {
+			res := Constructor{}
+			s, err2 := redis.String(c.Do("GET", t))
+			if !checkerr.Check(err2, "Error getting team info for", t) {
+				json.Unmarshal([]byte(s), &res)
+			}
+			teams = append(teams, res)
+		}
+	}
+
+	for i, t := range teams {
+		teams[i].RaceStarts = getRaceStarts(t.ConstructorID)
+		teams[i].RaceWins = getRaceWins(t.ConstructorID)
+		teams[i].WinRate = float32(teams[i].RaceWins) / float32(teams[i].RaceStarts)
+		teams[i].WinRateH = fmt.Sprintf("%.2f%% (%d wins from %d starts)", (teams[i].WinRate * 100), teams[i].RaceWins, teams[i].RaceStarts)
+
+		json, e := json.Marshal(teams[i])
+		if !checkerr.Check(e, "Error marshalling json") {
+			_, err = c.Do("SET", t.ConstructorID, json)
+			if checkerr.Check(err, "Error writing to redis:", string(json)) {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // Repopulate empties the redis cache and get fresh stats from ergast

@@ -68,9 +68,14 @@ func getConstructors() (result []ergast.Constructor) {
 	return
 }
 
-// repop is a handler for ergast.Repopulate
+// repop is a handler for ergast.Repopu
 func repop(w http.ResponseWriter, r *http.Request) {
 	checkerr.Check(ergast.Repopulate(), "Failed to repopulate redis cache from ergast")
+}
+
+// refresh is a handler for ergast.RefreshRaceStats
+func refresh(w http.ResponseWriter, r *http.Request) {
+	checkerr.Check(ergast.RefreshRaceStats(), "Failed to repopulate redis cache from ergast")
 }
 
 func main() {
@@ -81,6 +86,7 @@ func main() {
 	http.HandleFunc("/", indexPage)                                                                        //handler for the root page
 	http.Handle("/web/static/", http.StripPrefix("/web/static/", http.FileServer(http.Dir("web/static")))) //expose images & css
 	http.HandleFunc("/repop", repop)                                                                       //get a fresh dataset & load it into redis
+	http.HandleFunc("/refresh", refresh)                                                                   //get a fresh dataset & load it into redis
 
 	log.Fatal(http.ListenAndServe(":80", nil))
 }
