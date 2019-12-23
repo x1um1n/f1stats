@@ -9,6 +9,7 @@
         {{.PageTitle}}
       </div>
       <div class="main">
+        <div><button onclick=repop()>Repopulate</button></div>
         <table id="constructors" class="data-table" border="1" frame="void" rules="all" cellspacing="0" cellpadding="5">
           <tr>
             <th>Constructor Name</th>
@@ -48,6 +49,21 @@
               .sort(comparer(Array.from(th.parentNode.children).indexOf(th), this.asc = !this.asc))
               .forEach(tr => table.appendChild(tr) );
         })));
+
+        // // get new data from ergast
+        function repop() {
+          httpGetAsync("/repop", "/")
+        }
+
+        function httpGetAsync(theUrl, callback) {
+            var xmlHttp = new XMLHttpRequest();
+            xmlHttp.onreadystatechange = function() {
+                if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+                    callback(xmlHttp.responseText);
+            }
+            xmlHttp.open("GET", theUrl, true); // true for asynchronous
+            xmlHttp.send(null);
+        }
       </script>
     </body>
 </html>

@@ -37,7 +37,7 @@ func indexPage(w http.ResponseWriter, r *http.Request) {
 	Title := "All Time F1 Constructors Standings"
 
 	pv := PageVariables{
-		PageTitle:    Title,
+		PageTitle: Title,
 	}
 
 	pv.Constructors = getConstructors()
@@ -68,16 +68,19 @@ func getConstructors() (result []ergast.Constructor) {
 	return
 }
 
+// repop is a handler for ergast.Repopulate
+func repop(w http.ResponseWriter, r *http.Request) {
+	checkerr.Check(ergast.Repopulate(), "Failed to repopulate redis cache from ergast")
+}
+
 func main() {
-	shared.LoadKoanf()         //read in the config
-	shared.InitRedis() 				//create a redis connection pool
+	shared.LoadKoanf() //read in the config
+	shared.InitRedis() //create a redis connection pool
 
-	ergast.Repopulate() //get a fresh dataset & load it into redis
-	go startHealth()        //start the healthcheck endpoints
-
-	http.HandleFunc("/", indexPage) //handler for the root page
+	go startHealth()                                                                                       //start the healthcheck endpoints
+	http.HandleFunc("/", indexPage)                                                                        //handler for the root page
 	http.Handle("/web/static/", http.StripPrefix("/web/static/", http.FileServer(http.Dir("web/static")))) //expose images & css
-
+	http.HandleFunc("/repop", repop)                                                                       //get a fresh dataset & load it into redis
 
 	log.Fatal(http.ListenAndServe(":80", nil))
 }
