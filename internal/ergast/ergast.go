@@ -19,14 +19,15 @@ type Constructor struct {
 	URL                string   `json:"url"`
 	Name               string   `json:"name"`
 	Nationality        string   `json:"nationality"`
+	Flag               string   `json:"flag"`
 	ConTitleCount      int      `json:"constructors-titles-count"`
 	ConstructorsTitles []string `json:"constructors-titles"`
-	YearsActive        []string `json:"years-active"`       //fixme
-	YearsActiveH       string   `json:"years-active-human"` //fixme
+	YearsActive        []string `json:"years-active"`
+	YearsActiveH       string   `json:"years-active-human"`
 	RaceStarts         int      `json:"race-starts"`
 	RaceWins           int      `json:"race-wins"`
-	WinRate            float32  `json:"win-rate"`       //fixme
-	WinRateH           string   `json:"win-rate-human"` //fixme
+	WinRate            float32  `json:"win-rate"`
+	WinRateH           string   `json:"win-rate-human"`
 }
 
 // StandList contains the years a Constructor has won the title
@@ -57,6 +58,25 @@ func getChampConstructors() []Constructor {
 		return res.ConsReslt.ConsTab.Constructors
 	}
 	return nil
+}
+
+// getFlag takes a nationality and returns the filename for the appropriate flag
+// flag images originally came from https://www.iconfinder.com/iconsets/flags-37
+func getFlag(nat string) string {
+	switch nat {
+	case "Austrian":
+		return "/web/static/flags/flag-austria.svg"
+	case "British":
+		return "/web/static/flags/flag-uk.svg"
+	case "French":
+		return "/web/static/flags/flag-france.svg"
+	case "German":
+		return "/web/static/flags/flag-germany.svg"
+	case "Italian":
+		return "/web/static/flags/flag-italy.svg"
+	default:
+		return ""
+	}
 }
 
 // getConstructorsTitles gets all the years a constructor won the contructors
@@ -242,6 +262,7 @@ func Repopulate() error {
 			teams[i].WinRateH = fmt.Sprintf("%.2f%% (%d wins from %d starts)", (teams[i].WinRate * 100), teams[i].RaceWins, teams[i].RaceStarts)
 			teams[i].YearsActive = getActiveYears(t.ConstructorID)
 			teams[i].YearsActiveH = getYearSpans(teams[i].YearsActive)
+			teams[i].Flag = getFlag(teams[i].Nationality)
 
 			json, e := json.Marshal(teams[i])
 			if !checkerr.Check(e, "Error marshalling json") {

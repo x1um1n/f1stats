@@ -48,6 +48,15 @@ body {
     width: 100%;
 }
 
+.flag {
+    vertical-align: middle;
+    height: 3em;
+}
+
 th {
     cursor: pointer;
+}
+
+td {
+  vertical-align: middle;
 }
