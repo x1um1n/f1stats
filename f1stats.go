@@ -11,8 +11,10 @@ import (
 
 	"encoding/json"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -36,24 +38,6 @@ func startHealth() {
 	go http.ListenAndServe("0.0.0.0:9080", h)
 }
 
-// Start index page handler which renders the all time constructors standings
-func indexPage(w http.ResponseWriter, r *http.Request) {
-	Title := "All Time F1 Constructors Standings"
-
-	pv := PageVariables{
-		PageTitle: Title,
-		CSSVer:    StartTime,
-	}
-
-	pv.Constructors = getConstructors()
-
-	t, err := template.ParseFiles("web/template/index.html")
-	checkerr.Check(err, "Index template parsing error")
-
-	err = t.Execute(w, pv)
-	checkerr.Check(err, "Index template executing error")
-}
-
 func getConstructors() (result []ergast.Constructor) {
 	c := shared.P.Get()
 	defer c.Close()
@@ -73,6 +57,43 @@ func getConstructors() (result []ergast.Constructor) {
 	return
 }
 
+// updateCalendar gets the latest ical file for the f1fanatics calendar from google
+func updateCalendar() error {
+	log.Println("Getting F1 calendar..")
+	resp, err := http.Get("https://www.google.com/calendar/ical/hendnaic1pa2r3oj8b87m08afg%40group.calendar.google.com/public/basic.ics")
+	checkerr.Check(err, "Error downloading calendar")
+	defer resp.Body.Close()
+
+	out, err := os.Create("assets/basic.ics")
+	checkerr.Check(err, "Error creating local file")
+	defer out.Close()
+
+	_, err = io.Copy(out, resp.Body)
+	checkerr.Check(err, "Error writing calendar to local storage")
+
+	return err
+}
+
+/******************** HTTP handlers *******************************************/
+
+// Start index page handler which renders the all time constructors standings
+func indexPage(w http.ResponseWriter, r *http.Request) {
+	Title := "All Time F1 Constructors Standings"
+
+	pv := PageVariables{
+		PageTitle: Title,
+		CSSVer:    StartTime,
+	}
+
+	pv.Constructors = getConstructors()
+
+	t, err := template.ParseFiles("web/template/index.html")
+	checkerr.Check(err, "Index template parsing error")
+
+	err = t.Execute(w, pv)
+	checkerr.Check(err, "Index template executing error")
+}
+
 // repop is a handler for ergast.Repopu
 func repop(w http.ResponseWriter, r *http.Request) {
 	checkerr.Check(ergast.Repopulate(), "Failed to repopulate redis cache from ergast")
@@ -83,10 +104,19 @@ func refresh(w http.ResponseWriter, r *http.Request) {
 	checkerr.Check(ergast.RefreshRaceStats(), "Failed to repopulate redis cache from ergast")
 }
 
+/******************** End HTTP handlers ***************************************/
+
 func main() {
 	StartTime = time.Now().String() //capture the start time for cache-busting
 	shared.LoadKoanf()              //read in the config
 	shared.InitRedis()              //create a redis connection pool
+
+	if updateCalendar() != nil {
+		log.Println("Failed to get calendar, retrying..")
+		if updateCalendar() != nil {
+			log.Println("Failed to get calendar, again...fuck this shit..")
+		}
+	}
 
 	go startHealth()                                                                                       //start the healthcheck endpoints
 	http.HandleFunc("/", indexPage)                                                                        //handler for the root page
