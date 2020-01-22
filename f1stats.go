@@ -20,7 +20,11 @@ import (
 type PageVariables struct {
 	PageTitle    string
 	Constructors []ergast.Constructor
+	CSSVer       string
 }
+
+//StartTime holds a timestamp of when the app started, for cache-busting
+var StartTime string
 
 // defines and starts the healthcheck
 func startHealth() {
@@ -38,6 +42,7 @@ func indexPage(w http.ResponseWriter, r *http.Request) {
 
 	pv := PageVariables{
 		PageTitle: Title,
+		CSSVer:    StartTime,
 	}
 
 	pv.Constructors = getConstructors()
@@ -79,8 +84,9 @@ func refresh(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	shared.LoadKoanf() //read in the config
-	shared.InitRedis() //create a redis connection pool
+	StartTime = time.Now().String() //capture the start time for cache-busting
+	shared.LoadKoanf()              //read in the config
+	shared.InitRedis()              //create a redis connection pool
 
 	go startHealth()                                                                                       //start the healthcheck endpoints
 	http.HandleFunc("/", indexPage)                                                                        //handler for the root page
