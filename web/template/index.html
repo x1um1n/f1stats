@@ -3,6 +3,10 @@
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
         <link rel="stylesheet" href="/web/static/style.css?{{.CSSVer}}">
+        <script type="text/JavaScript" src="http://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js" ></script>
+        <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.css">
+        <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.js"></script>
+        <script type="text/javascript" charset="utf-8" src="https://cdn.datatables.net/plug-ins/1.10.20/sorting/natural.js"></script>
     </head>
     <body>
       <div class="header">
@@ -16,45 +20,49 @@
         </div>
         <div>
           <table id="constructors" class="data-table" border="1" frame="void" rules="all" cellspacing="0" cellpadding="5">
-            <tr>
-              <th>Constructor Name</th>
-              <th>Nationality</th>
-              <th>Years Active</th>
-              <th>Constructors Titles</th>
-              <th>Win Rate</th>
-            </tr>
-            {{range .Constructors}}
-            <tr>
-              <td><a href="{{.URL}}">{{.Name}}</a></td>
-              <td><img src="{{.Flag}}" class="flag" alt="team national flag">{{.Nationality}}</td>
-              <td>{{.YearsActiveH}}</td>
-              <td>
-                  {{.ConTitleCount}}:
-                  {{range .ConstructorsTitles}}
-                    {{.}},
-                  {{end}}
-              </td>
-              <td>{{.WinRateH}}</td>
-            </tr>
-            {{end}}
+            <thead>
+              <tr>
+                <th>Constructor Name</th>
+                <th>Nationality</th>
+                <th>Years Active</th>
+                <th>Constructors Titles</th>
+                <th>Win Rate</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{range .Constructors}}
+              <tr>
+                <td><a href="{{.URL}}">{{.Name}}</a></td>
+                <td><img src="{{.Flag}}" class="flag" alt="team national flag">{{.Nationality}}</td>
+                <td>{{.YearsActiveH}}</td>
+                <td>
+                    {{.ConTitleCount}}:
+                    {{range .ConstructorsTitles}}
+                      {{.}},
+                    {{end}}
+                </td>
+                <td>{{.WinRateH}}</td>
+              </tr>
+              {{end}}
+          </tbody>
           </table>
         </div>
       </div>
       <script>
-        //stolen from https://stackoverflow.com/questions/14267781/sorting-html-table-with-javascript
-        const getCellValue = (tr, idx) => tr.children[idx].innerText || tr.children[idx].textContent;
-
-        const comparer = (idx, asc) => (a, b) => ((v1, v2) =>
-          v1 !== '' && v2 !== '' && !isNaN(v1) && !isNaN(v2) ? v1 - v2 : v1.toString().localeCompare(v2)
-          )(getCellValue(asc ? a : b, idx), getCellValue(asc ? b : a, idx));
-
-        // do the work...
-        document.querySelectorAll('th').forEach(th => th.addEventListener('click', (() => {
-          const table = th.closest('table');
-          Array.from(table.querySelectorAll('tr:nth-child(n+2)'))
-              .sort(comparer(Array.from(th.parentNode.children).indexOf(th), this.asc = !this.asc))
-              .forEach(tr => table.appendChild(tr) );
-        })));
+        // init datatables for sorting
+        $(document).ready( function () {
+          $('#constructors').DataTable({
+            "paging":   false,
+            "columns": [
+              null,
+              null,
+              { "type": "natural" },
+              { "type": "natural" },
+              { "type": "natural" }
+            ],
+            "order": [[ 3, 'desc' ], [ 4, 'desc' ]]
+          });
+        } );
 
         // get new data from ergast
         function repop() {
