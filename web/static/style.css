@@ -30,6 +30,20 @@ body {
     flex-wrap: wrap;
 }
 
+.button {
+    background-color: #FF4436;
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    font-family: inherit;
+    font-size: 1em;
+    text-align: center;
+    text-decoration: none;
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 16px;
+}
+
 .data-table {
     width: 100%;
 }
