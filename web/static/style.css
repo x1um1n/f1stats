@@ -24,10 +24,16 @@ body {
     overflow: inherit;
 }
 
-th {
-    cursor: pointer;
+.action-bar {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
 }
 
 .data-table {
     width: 100%;
+}
+
+th {
+    cursor: pointer;
 }
