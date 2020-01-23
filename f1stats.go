@@ -3,6 +3,7 @@
 package main
 
 import (
+	"github.com/apognu/gocal"
 	"github.com/gomodule/redigo/redis"
 	"github.com/heptiolabs/healthcheck"
 	"github.com/x1um1n/checkerr"
@@ -10,11 +11,13 @@ import (
 	"github.com/x1um1n/f1stats/internal/shared"
 
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -58,9 +61,10 @@ func getConstructors() (result []ergast.Constructor) {
 }
 
 // updateCalendar gets the latest ical file for the f1fanatics calendar from google
+// fixme: hook this up to the google calendar api once deployed to google cloud
 func updateCalendar() error {
 	log.Println("Getting F1 calendar..")
-	resp, err := http.Get("https://www.google.com/calendar/ical/hendnaic1pa2r3oj8b87m08afg%40group.calendar.google.com/public/basic.ics")
+	resp, err := http.Get("https://calendar.google.com/calendar/ical/hendnaic1pa2r3oj8b87m08afg%40group.calendar.google.com/public/basic.ics")
 	checkerr.Check(err, "Error downloading calendar")
 	defer resp.Body.Close()
 
@@ -72,6 +76,32 @@ func updateCalendar() error {
 	checkerr.Check(err, "Error writing calendar to local storage")
 
 	return err
+}
+
+// fixme: hook this up to the google calendar api once deployed to google cloud
+func findNextRace() string {
+	f, err := os.Open("assets/basic.ics")
+	defer f.Close()
+
+	if !checkerr.Check(err, "Error opening calendar file") {
+		start, end := time.Now(), time.Now().Add(5*30*24*time.Hour)
+
+		log.Println("Parsing calendar file")
+		c := gocal.NewParser(f)
+		c.Start, c.End = &start, &end
+		c.Parse()
+
+		log.Println(len(c.Events))
+
+		for _, e := range c.Events {
+			log.Println(e) //fixme: nothing is being printed???
+
+			if strings.HasPrefix(e.Summary, "Race:") {
+				return fmt.Sprintf("Next race is %s starting at %s", strings.TrimPrefix(e.Summary, "Race: "), e.StartString)
+			}
+		}
+	}
+	return ""
 }
 
 /******************** HTTP handlers *******************************************/
@@ -111,12 +141,14 @@ func main() {
 	shared.LoadKoanf()              //read in the config
 	shared.InitRedis()              //create a redis connection pool
 
-	if updateCalendar() != nil {
-		log.Println("Failed to get calendar, retrying..")
-		if updateCalendar() != nil {
-			log.Println("Failed to get calendar, again...fuck this shit..")
-		}
-	}
+	// fixme: hook this up to the google calendar api once deployed to google cloud
+	// if updateCalendar() != nil {
+	// 	log.Println("Failed to get calendar, retrying..")
+	// 	if updateCalendar() != nil {
+	// 		log.Println("Failed to get calendar, again...fuck this shit..")
+	// 	}
+	// }
+	// log.Println(findNextRace())
 
 	go startHealth()                                                                                       //start the healthcheck endpoints
 	http.HandleFunc("/", indexPage)                                                                        //handler for the root page
